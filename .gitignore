@@ -1,7 +1,80 @@
+# ============================================================================
+# SentinelNet-Specific Exclusions
+# ============================================================================
+
 # Project-specific files to keep local
 Rule.txt
 Plan.txt
 Chat.txt
+
+# Database files (SQLite)
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+data/sentinelnet.db
+sentinelnet.db
+
+# Data directory (contains generated data and databases)
+data/*.db
+data/*.sqlite
+data/*.json
+data/*.csv
+# Keep the directory structure
+!data/.gitkeep
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Cloud provider credentials and keys
+*.pem
+*.key
+*.json.enc
+service-account-key.json
+*-credentials.json
+gcp-*.json
+azure-*.json
+aws-*.json
+
+# API keys and secrets
+secrets/
+credentials/
+*.secret
+
+# Model files (can be large)
+models/*.pkl
+models/*.joblib
+models/*.h5
+models/*.pt
+models/*.pth
+models/*.onnx
+# Keep model directory structure
+!models/.gitkeep
+
+# Log files
+logs/*.log
+logs/**/*.log
+*.log
+# Keep logs directory structure
+!logs/.gitkeep
+
+# Temporary and cache directories
+tmp/
+temp/
+.cache/
+.sentinelnet_cache/
+
+# UV package manager cache
+.uv/
+uv.lock
+
+# Grafana/Prometheus data (if running locally)
+grafana_data/
+prometheus_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -176,15 +249,212 @@ Cargo.lock
 # Go
 vendor/
 
-# Logs
-# logs/ - Commented to allow logs directory structure, but still exclude log files
-*.log
-!logs/.gitkeep
+# ============================================================================
+# Monitoring and Observability Data
+# ============================================================================
+
+# Prometheus metrics storage
+prometheus/data/
+prometheus/*.yml.local
+
+# Grafana data and configs
+grafana/data/
+grafana/*.db
+
+# OpenTelemetry traces
+traces/
+*.otlp
+
+# ============================================================================
+# Testing and Development
+# ============================================================================
+
+# Test outputs
+test_results/
+test_reports/
+.test_cache/
+
+# Sample data for testing (keep examples)
+tests/fixtures/*.db
+tests/fixtures/*.sqlite
 
 # Temporary files
 *.tmp
 *.temp
+*.bak
+*.backup
+*~
 Attack Path Explorer + Predictive Vulnerability.txt
 chat.txt
 plan.txt
-Rule.txt
+
+# ============================================================================
+# IDE and Editor Specific (macOS focused)
+# ============================================================================
+
+# Cursor/VS Code settings (if you want personal settings to stay local)
+# .vscode/settings.json
+# .cursor/settings.json
+
+# PyCharm
+.idea/
+*.iml
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ============================================================================
+# Docker and Containers
+# ============================================================================
+
+# Docker volumes and data
+docker/data/
+docker/volumes/
+
+# Docker compose overrides (keep example)
+docker-compose.override.yml
+!docker-compose.override.yml.example
+
+# ============================================================================
+# Cloud and Infrastructure
+# ============================================================================
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Kubernetes local config
+*.kubeconfig
+kubeconfig-*.yaml
+
+# Ansible
+*.retry
+
+# ============================================================================
+# Security and Sensitive Data
+# ============================================================================
+
+# Private keys and certificates
+*.key
+*.pem
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# SSH keys
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# GPG keys
+*.gpg
+*.asc
+
+# Encrypted files (keep encrypted versions if needed)
+# *.enc
+
+# ============================================================================
+# MacOS Specific (Apple Silicon optimizations)
+# ============================================================================
+
+# MacOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# ============================================================================
+# Performance and Profiling
+# ============================================================================
+
+# Profiling data
+*.prof
+*.pstats
+profile_*
+
+# Memory dumps
+*.hprof
+*.dump
+
+# ============================================================================
+# Documentation Build Artifacts
+# ============================================================================
+
+# Sphinx
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# MkDocs
+site/
+mkdocs_site/
+
+# ============================================================================
+# CI/CD Artifacts
+# ============================================================================
+
+# GitHub Actions
+.github/workflows/*.local.yml
+
+# CircleCI
+.circleci/config.local.yml
+
+# ============================================================================
+# Miscellaneous
+# ============================================================================
+
+# Large media files (if any)
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+
+# Archives (keep documented archives)
+# *.zip
+# *.tar.gz
+# *.rar
+# *.7z
+
+# Lock files (consider keeping for reproducibility)
+# poetry.lock  - Keep this
+# Pipfile.lock - Keep this
+# yarn.lock    - Keep this
+
+# Exclude specific large or generated documentation
+CHANGELOG.draft.md
+NOTES.md
+TODO.personal.md

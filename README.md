@@ -1,406 +1,522 @@
-# SentinelNet: AI-Powered Multi-Cloud Resilience Platform
+# SentinelNet v0.1.0: AI-Powered Multi-Cloud Resilience Platform
 
-## 🚀 Vision: Intelligent Action on Enterprise Monitoring
+## 🚀 Vision: Intelligent Remediation for Cloud Infrastructure
 
-**Datadog alerts you when BigQuery goes down. SentinelNet tells you exactly what to do and does it for you.**
+**Prometheus alerts you when BigQuery goes down. SentinelNet tells you exactly what to do and does it for you.**
 
-**The Problem:** Teams spend hours investigating alerts and manually executing remediation. During major outages, this costs millions in downtime.
+**The Problem:** SRE teams spend hours investigating alerts and manually executing remediation. During major outages, this costs millions in downtime and countless on-call hours.
 
-**The Solution:** SentinelNet connects to your existing Datadog monitoring and adds an intelligent action layer powered by LangGraph agents.
+**The Solution:** SentinelNet connects to your existing Grafana + Prometheus monitoring stack and adds an intelligent action layer powered by LangGraph AI agents.
 
 **Example Flow:**
 ```
-Datadog Alert: "BigQuery US-east-1 High Latency"
+Prometheus Alert: "BigQuery US-east-1 High Latency"
+     ↓
+AlertManager → SentinelNet Webhook
      ↓
 SentinelNet AI Agent: Analyzes alert + infrastructure context
      ↓
 Intelligent Plan: "Switch to BigQuery US-west-2, update DNS, validate data consistency"
      ↓
-Human Approval: SRE reviews cost/risk assessment
+Human Approval: SRE reviews cost/risk assessment in Dashboard
      ↓
 Automated Execution: Terraform apply + monitoring + rollback ready
+     ↓
+Grafana Dashboard: Real-time execution tracking
 ```
 
 **Unlike pure monitoring tools, SentinelNet transforms alerts into automated, intelligent remediation.**
 
+---
+
+## 🎯 Target Users
+
+**Primary:** SRE Teams, DevOps Engineers, Platform Engineers
+
+**Use Cases:**
+- Automated incident response with human-in-the-loop approval
+- Cross-cloud dependency analysis during outages
+- Intelligent remediation plan generation
+- Cost-benefit analysis for infrastructure changes
+
+---
+
 ## ✨ Key Features
 
-- **Datadog Integration**: Leverages existing enterprise monitoring infrastructure
-- **Intelligent Action Engine**: Transforms Datadog alerts into executable remediation plans
-- **Multi-Cloud Reconfiguration**: AI agents generate Terraform/ARM templates for failover
-- **Impact Analysis**: Understands application dependencies and cascading effects
-- **Safe Automation**: Human-in-the-loop validation with rollback capabilities
-- **Cost Intelligence**: Automated cost-benefit analysis for reconfiguration decisions
-- **Enterprise Dashboard**: Rich UI for alert triage and remediation approval
+### 🤖 Advanced AI Agent Orchestration
+- **LangGraph Workflows**: Complex multi-step remediation orchestration
+- **Plugin Architecture**: Support for Microsoft AutoGen, Google Agent Kit, or LangChain
+- **Intelligent Remediation**: AI-generated plans with safety validation and human oversight
+- **Multi-LLM Support**: OpenAI GPT-4, Google Gemini, or Azure OpenAI
 
-## 🔍 Datadog Integration: Monitoring + Intelligent Action
+### 📊 Native Grafana + Prometheus Integration
+- **Prometheus Metrics**: Real-time performance monitoring and custom metrics
+- **AlertManager Webhooks**: Direct integration for alert-driven workflows
+- **Grafana Dashboards**: Pre-built dashboards for SentinelNet metrics
+- **OpenTelemetry**: Distributed tracing and observability
 
-| Component | Datadog (Monitoring) | SentinelNet (Action Intelligence) |
-|-----------|---------------------|----------------------------------|
-| **Data Collection** | ✅ Metrics, logs, traces | ❌ (Uses Datadog data) |
-| **Alert Generation** | ✅ Threshold-based alerts | ❌ (Processes Datadog alerts) |
-| **Visualization** | ✅ Rich dashboards | ✅ Action-focused triage UI |
-| **Root Cause Analysis** | ⚠️ Manual correlation | ✅ AI-powered dependency analysis |
-| **Remediation Planning** | ❌ Alert-only | ✅ Multi-step recovery strategies |
-| **Automated Execution** | ❌ Manual processes | ✅ Human-approved automation |
-| **Cost Analysis** | ❌ Basic cost monitoring | ✅ Reconfiguration cost-benefit |
+### ☁️ Multi-Cloud Intelligence
+- **GCP Integration**: BigQuery, Vertex AI, Cloud Storage, Cloud Monitoring
+- **Azure Integration**: Blob Storage, DevOps, Monitor, Resource Manager
+- **AWS Ready**: Extensible architecture for additional cloud providers
+- **Cross-Cloud Correlation**: Intelligent analysis across cloud boundaries
 
-**SentinelNet enhances Datadog by adding the "What should we do?" and "Do it safely" layers that traditional monitoring lacks.**
+### 🛡️ Enterprise-Grade Security & Safety
+- **Human-in-the-Loop**: All remediation plans require explicit approval
+- **Safety Validation**: Automated risk assessment and rollback planning
+- **Audit Logging**: Comprehensive action tracking and compliance
+- **No Destructive Actions**: Demo mode prevents accidental damage
 
-## 🔄 Automated Reconfiguration Examples
-
-### BigQuery Regional Failover
-```
-Outage Detected: BigQuery US-east-1 unavailable
-↓
-AI Analysis: Identifies 15 applications using this region
-↓
-Safe Reconfiguration Plan:
-  • Generate BigQuery dataset replication commands
-  • Create Terraform configuration for region switching
-  • Validate data consistency and replication lag
-  • Estimate costs: $50 downtime cost vs $200 cross-region transfer
-↓
-Human Approval: SRE reviews risk assessment and approves
-↓
-Execution: Automated Terraform apply with monitoring
-↓
-Verification: Confirm applications working in new region
-↓
-Rollback: Automated revert if issues detected
-```
-
-### Safe Reconfiguration Boundaries
-- **What We Automate**: Dataset replication, endpoint switching, configuration updates
-- **What Requires Human Approval**: Cost analysis, business logic validation, final execution
-- **What We Never Touch**: Production databases, customer data, billing configurations
-- **Safety Measures**: Comprehensive validation, cost estimation, rollback planning
-
-### Vertex AI Endpoint Migration
-```
-Outage Detected: Vertex AI prediction endpoint down
-↓
-AI Analysis: Maps affected ML services and dependencies
-↓
-Reconfiguration Plan: Deploy model to backup region
-↓
-Cost-Benefit Analysis: Compare latency vs. availability
-↓
-Human Approval: ML engineer validates model compatibility
-↓
-Execution: Automated endpoint switching with traffic routing
-```
+---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│    Datadog      │    │   SentinelNet   │    │   Enterprise    │
-│   Monitoring    │───►│   AI Agents     │───►│   Systems       │
-│                 │    │                 │    │                 │
-│ • Real-time     │    │ • LangGraph     │    │ • Terraform     │
-│ • Alerts        │    │ • Impact        │    │ • Kubernetes    │
-│ • Metrics       │    │ • Reconfig      │    │ • Cloud APIs    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │   Action        │
-                    │   Dashboard     │
-                    │                 │
-                    │ • Alert Triage  │
-                    │ • Plan Review   │
-                    │ • Execution     │
-                    └─────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         SentinelNet Platform                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐              │
+│  │   Grafana    │    │  Prometheus  │    │ AlertManager │              │
+│  │  Dashboards  │◄──►│   Metrics    │◄──►│   Webhooks   │              │
+│  └──────────────┘    └──────────────┘    └──────┬───────┘              │
+│                                                  │                       │
+│                                                  ▼                       │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                    SentinelNet API (FastAPI)                      │  │
+│  │  • /webhooks/alertmanager  • /api/remediation  • /api/status     │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                    │                                     │
+│                                    ▼                                     │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                   AI Agent Orchestrator (LangGraph)               │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │  │
+│  │  │  Monitor    │  │   Impact    │  │ Remediation │              │  │
+│  │  │   Agent     │  │   Analyzer  │  │   Planner   │              │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘              │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                    │                                     │
+│                                    ▼                                     │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                      Plugin System                                │  │
+│  │  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐    │  │
+│  │  │ LangChain │  │  AutoGen  │  │  Google   │  │  Custom   │    │  │
+│  │  │  (Multi)  │  │  (Azure)  │  │   (GCP)   │  │  Plugins  │    │  │
+│  │  └───────────┘  └───────────┘  └───────────┘  └───────────┘    │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                    │                                     │
+│                                    ▼                                     │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                    Cloud Integrations                             │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │  │
+│  │  │      GCP        │  │     Azure       │  │      AWS        │  │  │
+│  │  │ BigQuery,Vertex │  │ Blob,DevOps     │  │   (Future)      │  │  │
+│  │  └─────────────────┘  └─────────────────┘  └─────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Hardware**: M1 Pro MacBook Pro (Apple Silicon)
-- **OS**: macOS with all development tools installed
-- **Python**: 3.9+ with UV package manager
-- **Cloud Accounts**: GCP Always Free tier + Azure free services
+- **Python**: 3.9+ 
+- **Package Manager**: UV (recommended) or pip
+- **Cloud Accounts**: GCP and/or Azure (free tiers work)
+- **AI API Key**: OpenAI or Google AI
 
-### One-Click Setup (Recommended)
+### Installation
+
 ```bash
-# Make script executable and run (only needed once)
-chmod +x setup_and_run.sh
-./setup_and_run.sh
-```
+# Clone the repository
+git clone https://github.com/Vinayak-Pawar/SentinelNet.git
+cd SentinelNet
 
-### Manual Setup
-```bash
-# Create environment
-uv venv sentinelnet_env
-source sentinelnet_env/bin/activate
+# Option 1: One-click setup (recommended)
+chmod +x setup_and_run_v2.sh
+./setup_and_run_v2.sh
 
-# Install dependencies
-uv pip install -r requirements.txt
+# Option 2: Manual installation
+pip install -e .
 
 # Configure environment
 cp .env.example .env
 # Edit .env with your API keys
-
-# Run the application
-python main.py
 ```
+
+### CLI Commands
+
+```bash
+# Initialize SentinelNet
+sentinelnet init
+
+# Start the API server
+sentinelnet api
+
+# Start the dashboard
+sentinelnet dashboard
+
+# Start Prometheus metrics server
+sentinelnet monitor
+
+# Check system status
+sentinelnet status
+
+# Run tests
+sentinelnet test
+```
+
+### Quick Demo
+
+```bash
+# Start all services
+sentinelnet api &
+sentinelnet dashboard &
+sentinelnet monitor &
+
+# Open in browser
+# API Docs: http://localhost:8000/docs
+# Dashboard: http://localhost:8501
+# Metrics: http://localhost:8001/metrics
+```
+
+---
 
 ## 📁 Project Structure
 
 ```
 sentinelnet/
-├── Rule.txt              # Development rules and guidelines
-├── Plan.txt              # Complete project roadmap
-├── setup_and_run.sh      # One-click setup script
-├── requirements.txt      # Python dependencies
-├── main.py              # Application entry point
-├── agents/              # AI agent implementations
-│   ├── orchestrator.py   # LangGraph coordination
-│   ├── gcp_monitor.py    # GCP service monitoring
-│   ├── azure_monitor.py  # Azure service monitoring
-│   └── remediation.py    # Remediation planning
-├── dashboard/           # Streamlit dashboard
-│   └── app.py           # Main dashboard application
-├── api/                 # FastAPI backend
-│   └── main.py          # API endpoints
-├── data/                # Data storage and processing
-├── models/              # ML models and anomaly detection
-├── docs/                # Documentation
-└── logs/                # Application logs
+├── sentinelnet/              # Main package
+│   ├── __init__.py           # Package initialization
+│   ├── cli.py                # Command-line interface
+│   ├── core/                 # Core components
+│   │   ├── config.py         # Configuration management
+│   │   └── orchestrator.py   # LangGraph orchestration
+│   ├── agents/               # AI agent implementations
+│   │   ├── __init__.py       # Plugin manager
+│   │   ├── plugins/          # Agent plugins
+│   │   │   ├── autogen_azure.py
+│   │   │   ├── google_gcp.py
+│   │   │   └── langchain_multi.py
+│   │   ├── gcp_monitor.py    # GCP monitoring
+│   │   └── azure_monitor.py  # Azure monitoring
+│   ├── api/                  # FastAPI backend
+│   │   └── main.py           # API endpoints
+│   ├── dashboard/            # Streamlit dashboard
+│   │   └── app.py            # Dashboard application
+│   └── monitoring/           # Observability
+│       ├── prometheus.py     # Prometheus metrics
+│       └── grafana.py        # Grafana integration
+├── docs/                     # Documentation
+├── logs/                     # Application logs
+├── pyproject.toml            # Package configuration
+├── requirements.txt          # Dependencies
+└── main.py                   # Application entry point
 ```
+
+---
 
 ## 🔧 Configuration
 
 ### Environment Variables (.env)
-```bash
-# Datadog Integration
-DATADOG_API_KEY=your-datadog-api-key
-DATADOG_APP_KEY=your-datadog-app-key
-DATADOG_SITE=datadoghq.com  # or datadoghq.eu
 
-# Cloud Platforms (for reconfiguration)
+```bash
+# ===========================================
+# SentinelNet Configuration
+# ===========================================
+
+# Environment
+ENVIRONMENT=development
+DEBUG=true
+LOG_LEVEL=INFO
+
+# ===========================================
+# AI Services (at least one required)
+# ===========================================
+OPENAI_API_KEY=sk-your-openai-api-key
+# OR
+GOOGLE_API_KEY=your-google-ai-api-key
+
+# ===========================================
+# Google Cloud Platform (optional)
+# ===========================================
+GCP_ENABLED=true
 GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_APPLICATION_CREDENTIALS=./service-account-key.json
 
+# ===========================================
+# Microsoft Azure (optional)
+# ===========================================
+AZURE_ENABLED=true
+AZURE_SUBSCRIPTION_ID=your-subscription-id
 AZURE_CLIENT_ID=your-client-id
 AZURE_CLIENT_SECRET=your-client-secret
 AZURE_TENANT_ID=your-tenant-id
-AZURE_SUBSCRIPTION_ID=your-subscription-id
 
-# AI Services
-OPENAI_API_KEY=your-openai-api-key
+# ===========================================
+# Monitoring (Grafana + Prometheus)
+# ===========================================
+MONITORING_ENABLED=true
+PROMETHEUS_PORT=8001
+GRAFANA_URL=http://localhost:3000
+GRAFANA_API_KEY=your-grafana-api-key
 
-# Application
-DEBUG=true
+# ===========================================
+# API Configuration
+# ===========================================
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# ===========================================
+# Dashboard Configuration
+# ===========================================
 DASHBOARD_PORT=8501
-DATABASE_URL=postgresql://localhost/sentinelnet
 ```
 
-### Datadog Setup
-1. **Create Datadog Account**: Sign up at [datadoghq.com](https://datadoghq.com)
-2. **Get API Keys**: Navigate to Organization Settings → API Keys
-3. **Configure Webhooks**: Set up webhooks to send alerts to SentinelNet
-4. **Install Integrations**: Configure GCP and Azure integrations in Datadog
+---
 
-### Cloud Setup (for Reconfiguration Actions)
+## 📊 Grafana + Prometheus Integration
 
-#### GCP Always Free Tier
-- BigQuery: 1TB queries/month, 10GB storage
-- Vertex AI: Limited predictions for AI analysis
-- Cloud Storage: 5GB storage
-- Compute Engine: f1-micro instances for testing
+### AlertManager Configuration
 
-#### Azure Free Services
-- Blob Storage: 5GB hot storage
-- Functions: 1M executions/month
-- DevOps: 5 users, unlimited repos
-- App Service: Basic tier for testing
+Add SentinelNet as a webhook receiver in your `alertmanager.yml`:
 
-## 🎯 Development Phases
+```yaml
+receivers:
+  - name: 'sentinelnet'
+    webhook_configs:
+      - url: 'http://localhost:8000/webhooks/alertmanager'
+        send_resolved: true
 
-### Phase 1: Integration & Intelligence (Weeks 1-8)
-- ✅ Datadog API integration for alert consumption
-- ✅ LangGraph agent workflows for alert processing and correlation
-- ✅ Impact analysis engine for dependency mapping
-- ✅ AI-generated remediation plans with safety validation
-- ✅ Human approval dashboard for plan review and execution
-- ✅ One-click setup script with Datadog webhook configuration
+route:
+  receiver: 'sentinelnet'
+  group_by: ['alertname', 'service']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 3h
+```
 
-### Phase 2: Enterprise Automation (Months 3-4)
-- **Multi-Cloud Reconfiguration**:
-  - BigQuery cross-region failover automation
-  - Vertex AI endpoint migration with model validation
-  - Azure Blob Storage geo-redundancy activation
-  - DevOps pipeline region switching
-- **Advanced Intelligence**:
-  - Cost-benefit analysis for reconfiguration decisions
-  - Predictive failure analysis based on historical data
-  - Automated rollback and recovery validation
-  - Multi-step remediation orchestration
-- Enterprise integrations (Slack, PagerDuty, ServiceNow)
+### Available Prometheus Metrics
 
-## 🛠️ Technology Stack
+SentinelNet exposes the following metrics at `/metrics`:
 
-### Core Technologies
-- **Datadog API**: Integration with enterprise monitoring platform
-- **LangGraph**: Agent orchestration for intelligent remediation workflows
-- **FastAPI**: Backend API for agent coordination and Datadog webhooks
-- **Terraform**: Infrastructure automation for safe reconfiguration
-- **Streamlit**: Interactive dashboard for alert triage and plan approval
-- **PostgreSQL**: Store remediation plans, execution history, and cost analysis
+| Metric | Type | Description |
+|--------|------|-------------|
+| `sentinelnet_requests_total` | Counter | Total API requests |
+| `sentinelnet_request_latency_seconds` | Histogram | Request latency |
+| `sentinelnet_active_agents` | Gauge | Number of active agents |
+| `sentinelnet_incidents_total` | Counter | Total incidents detected |
+| `sentinelnet_remediations_total` | Counter | Total remediation plans |
+| `sentinelnet_remediation_success_rate` | Gauge | Success rate of remediations |
 
-### Action Intelligence Engine
-- **Alert Processing**: Parse Datadog webhooks and correlate related alerts
-- **Impact Analysis**: Graph-based dependency mapping and blast radius calculation
-- **Plan Generation**: AI agents create multi-step remediation strategies
-- **Safety Validation**: Automated risk assessment, cost estimation, and rollback planning
-- **Execution Control**: Human-in-the-loop approval with automated execution
+### Grafana Dashboard
 
-### Cloud & Infrastructure
-- **Google Cloud**: BigQuery, Vertex AI, Cloud Monitoring
-- **Azure**: Blob Storage, DevOps, Monitor
-- **Docker**: Containerized deployment
-- **Kubernetes**: Orchestration (local with Kind)
+Import the pre-built dashboard from `dashboards/sentinelnet.json` or create via API:
 
-### AI/ML Stack
-- **OpenAI GPT**: Remediation plan generation
-- **Scikit-learn**: Statistical anomaly detection
-- **Pandas/NumPy**: Data processing
+```bash
+sentinelnet grafana --import-dashboard
+```
 
-## 🔒 Security & Safety
-
-### Liability Protection
-- **Demo-Only**: Never executes actions in production
-- **Human Validation**: All remediation plans require approval
-- **Test Credentials**: Only uses sandbox/test accounts
-- **Safety Validation**: Automated risk assessment
-
-### Security Features
-- Encrypted credential storage
-- Least privilege access
-- Audit logging
-- Rate limiting protection
-
-## 📊 Monitoring & Metrics
-
-### Performance Benchmarks
-- Health checks: <5 seconds response time
-- Memory usage: <500MB per agent
-- False positives: <5% for anomaly detection
-
-### Key Metrics
-- Service availability detection accuracy
-- Remediation plan generation time
-- Cross-cloud correlation latency
-
-## 🧪 Testing & Validation
-
-### Testing Strategy
-- Unit tests for individual components
-- Integration tests for agent communication
-- End-to-end tests with simulated outages
-- Performance benchmarking
-
-### Local Development
-- Azurite for Azure Storage emulation
-- BigQuery public datasets for testing
-- Mock APIs for comprehensive testing
+---
 
 ## 🚦 API Endpoints
 
-### Datadog Integration
+### Alert Integration
 ```
-POST /webhooks/datadog     # Receive Datadog alerts and trigger analysis
-GET /alerts/{alert_id}     # Get detailed alert information
-POST /alerts/{alert_id}/acknowledge  # Acknowledge alert processing
-```
-
-### AI Analysis Engine
-```
-POST /analysis/impact      # Analyze alert impact and dependencies
-POST /analysis/plan        # Generate remediation plan for alert
-GET /analysis/{plan_id}    # Get detailed remediation plan
-POST /analysis/{plan_id}/validate  # Validate plan safety and costs
+POST /webhooks/alertmanager    # Receive AlertManager webhooks
+POST /webhooks/custom          # Custom alert ingestion
 ```
 
-### Execution Control
+### AI Analysis
 ```
-POST /execute/{plan_id}    # Execute approved remediation plan
-POST /execute/{execution_id}/rollback  # Rollback failed execution
-GET /execute/{execution_id}/status     # Get execution status
-```
-
-### Dashboard & Monitoring
-```
-GET /dashboard/alerts      # Get active alerts with AI analysis
-GET /dashboard/plans       # Get pending remediation plans
-GET /dashboard/executions  # Get execution history and costs
-GET /dashboard/metrics     # Get system performance metrics
+POST /api/analysis/impact      # Analyze alert impact
+POST /api/analysis/plan        # Generate remediation plan
+GET  /api/analysis/{plan_id}   # Get plan details
 ```
 
-## 🤝 Contributing
+### Remediation
+```
+POST /api/remediation/{plan_id}/approve   # Approve plan
+POST /api/remediation/{plan_id}/execute   # Execute plan
+POST /api/remediation/{plan_id}/rollback  # Rollback execution
+GET  /api/remediation/{plan_id}/status    # Execution status
+```
 
-### Development Guidelines
-1. Follow the rules in `Rule.txt`
-2. Follow the plan in `Plan.txt`
-3. Use UV for environment management
-4. Add comprehensive comments and documentation
-5. Test thoroughly before committing
+### System
+```
+GET  /health                   # Health check
+GET  /api/system/status        # System status
+GET  /api/system/metrics       # Metrics summary
+GET  /metrics                  # Prometheus metrics
+```
 
-### Code Quality
-- Black for code formatting
-- isort for import sorting
-- flake8 for linting
-- pytest for testing
+---
+
+## 🔄 Workflow Example
+
+### BigQuery Regional Failover
+
+```
+1. Alert Received: BigQuery US-east-1 unavailable
+   └─► AlertManager webhook → SentinelNet API
+
+2. AI Analysis: 
+   └─► Identifies 15 applications using this region
+   └─► Maps cross-cloud dependencies
+   └─► Calculates business impact score
+
+3. Remediation Plan Generated:
+   ├─► Step 1: Validate BigQuery US-west-2 availability
+   ├─► Step 2: Generate dataset replication commands
+   ├─► Step 3: Create Terraform config for region switch
+   ├─► Step 4: Estimate costs ($50 downtime vs $200 transfer)
+   └─► Step 5: Prepare rollback procedure
+
+4. Human Approval:
+   └─► SRE reviews plan in Dashboard
+   └─► Approves execution with one click
+
+5. Automated Execution:
+   └─► Terraform apply with monitoring
+   └─► Real-time progress in Grafana
+
+6. Verification:
+   └─► Confirm applications working
+   └─► Auto-rollback if issues detected
+```
+
+---
+
+## 🤖 AI Agent Framework
+
+### Plugin System
+
+SentinelNet supports multiple AI agent frameworks through its plugin architecture:
+
+| Plugin | Best For | License |
+|--------|----------|---------|
+| `langchain` | Multi-cloud, flexibility | MIT (Free) |
+| `langgraph` | Complex workflows | MIT (Free) |
+| `autogen` | Azure-native operations | MIT (Free) |
+| `google_agent_kit` | GCP-native operations | Included with GCP |
+
+### Configuration
+
+```bash
+# Use LangChain for everything (recommended for most users)
+PLUGIN_MULTI_CLOUD_PLUGINS=["langchain", "langgraph"]
+
+# Azure-focused (if you have Azure licenses)
+PLUGIN_AZURE_PLUGINS=["autogen", "langchain"]
+
+# GCP-focused (if you use Google Cloud)
+PLUGIN_GCP_PLUGINS=["google_agent_kit", "langchain"]
+```
+
+---
+
+## 🔒 Safety & Security
+
+### Safety Measures
+- **Human Approval Required**: All remediation plans require explicit approval
+- **Risk Assessment**: Automated risk scoring for every action
+- **Rollback Planning**: Every plan includes rollback procedures
+- **Demo Mode**: Default mode prevents real infrastructure changes
+- **Audit Logging**: Complete action history for compliance
+
+### What We Automate (with approval)
+- Dataset replication
+- Endpoint switching
+- Configuration updates
+- DNS changes
+
+### What We Never Touch
+- Production databases without explicit approval
+- Customer data
+- Billing configurations
+- Security credentials
+
+---
 
 ## 📈 Roadmap
 
-### Short Term (MVP)
-- Complete distributed monitoring system
-- Implement basic LangGraph workflows
-- Build offline-capable dashboard
-- Create comprehensive documentation
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the complete development plan.
 
-### Medium Term (Phase 2)
-- Add predictive capabilities
-- Implement enterprise features
-- Expand to additional cloud providers
-- Enhance security and compliance
+### Current Status: v0.1.0 (MVP)
+- [x] Core package structure
+- [x] Plugin-based agent architecture
+- [x] FastAPI backend
+- [x] Streamlit dashboard
+- [x] Prometheus metrics
+- [ ] AlertManager webhook integration
+- [ ] Complete LangGraph workflows
+- [ ] Grafana dashboard templates
+- [ ] End-to-end testing
 
-### Long Term (Future)
-- Multi-tenant SaaS platform
-- Integration with enterprise tools
-- Advanced AI capabilities
-- Global monitoring network
+---
 
-## 📞 Support
+## 🧪 Development
 
-### Getting Help
-1. Check the troubleshooting section in docs/
-2. Review the setup script logs
-3. Check the FAQ in documentation
-4. Open an issue with detailed error logs
+### Running Tests
 
-### Documentation
-- `docs/setup.md`: Detailed setup instructions
-- `docs/api.md`: API documentation
-- `docs/troubleshooting.md`: Common issues and solutions
-- `docs/architecture.md`: System architecture details
+```bash
+# Run all tests
+sentinelnet test
+
+# Or using pytest directly
+pytest tests/ -v --cov=sentinelnet
+```
+
+### Code Quality
+
+```bash
+# Format code
+black sentinelnet/
+isort sentinelnet/
+
+# Lint
+flake8 sentinelnet/
+mypy sentinelnet/
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests (`sentinelnet test`)
+5. Commit (`git commit -m 'Add amazing feature'`)
+6. Push (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+---
 
 ## ⚖️ Disclaimer
 
 **Educational/Portfolio Project**: This project is designed for educational purposes and portfolio demonstration. It implements safety measures to prevent unintended actions, but should never be used in production environments without enterprise-grade security reviews and liability assessments.
 
-**No Warranty**: The software is provided "as is" without warranty of any kind. Users are responsible for their own security and compliance requirements.
-
-## 📄 License
-
-This project is for educational and portfolio purposes. See individual component licenses for distribution terms.
+**No Warranty**: The software is provided "as is" without warranty of any kind.
 
 ---
 
-**Built with ❤️ on M1 Pro MacBook Pro**
+## 📄 License
 
-*Demonstrating advanced AI, distributed systems, and cloud resilience*
+MIT License - See [LICENSE](LICENSE) for details.
+
+---
+
+## 📞 Support
+
+- **Documentation**: [docs/](docs/)
+- **Issues**: [GitHub Issues](https://github.com/Vinayak-Pawar/SentinelNet/issues)
+- **Author**: Vinayak Pawar
+
+---
+
+**Built with ❤️ for SRE teams everywhere**
+
+*Transforming alerts into intelligent action*

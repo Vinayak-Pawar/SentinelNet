@@ -31,21 +31,13 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langchain_community.callbacks import get_openai_callback
 
-# Local imports (will be created)
-try:
-    from data.processor import DataProcessor
-except ImportError:
-    from ..data.processor import DataProcessor
-
-try:
-    from agents.communication import CommunicationManager
-except ImportError:
-    from .communication import CommunicationManager
-
-try:
-    from agents.remediation import RemediationPlanner
-except ImportError:
-    from .remediation import RemediationPlanner
+# Local imports
+from sentinelnet.core.config import get_settings
+from sentinelnet.data.processor import DataProcessor
+from sentinelnet.agents.communication import CommunicationManager
+from sentinelnet.agents.remediation import RemediationPlanner
+from sentinelnet.agents import get_plugin_manager, setup_gcp_plugins, setup_azure_plugins, setup_multi_cloud_plugins
+from sentinelnet.monitoring.prometheus import update_metrics
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -123,27 +115,80 @@ class SentinelNetOrchestrator:
     Implements LangGraph workflows for distributed agent coordination
     """
 
-    def __init__(self, openai_api_key: str = None):
+    def __init__(self, settings=None):
         """
         Initialize the orchestrator
 
         Args:
-            openai_api_key: OpenAI API key for LLM operations
+            settings: Application settings (uses global settings if None)
         """
-        self.openai_api_key = openai_api_key or os.getenv('OPENAI_API_KEY')
-        if not self.openai_api_key:
-            logger.warning("⚠️  OPENAI_API_KEY not found - some features may be limited")
+        self.settings = settings or get_settings()
 
-        # Initialize components
-        self.llm = ChatOpenAI(
-            model="gpt-4-turbo-preview",
-            temperature=0.1,
-            api_key=self.openai_api_key
-        ) if self.openai_api_key else None
+        # Initialize AI components
+        self.llm = self._initialize_llm()
+        self.plugin_manager = get_plugin_manager()
 
+        # Initialize core components
         self.data_processor = DataProcessor()
         self.communication_manager = CommunicationManager()
         self.remediation_planner = RemediationPlanner(llm=self.llm)
+
+        # Plugin-based components (initialized asynchronously)
+        self.cloud_plugins = {}
+        self.active_plugins = {}
+
+        # Legacy components for backward compatibility (will be removed)
+        self.autogen_agents = {}
+        self.google_agents = {}
+        self.cloud_monitors = {}
+
+        # Update Prometheus metrics
+        update_metrics(orchestrator_status="created")
+
+    async def initialize_plugins(self):
+        """Async initialization of plugins and agent frameworks"""
+        logger.info("🔌 Initializing agent plugins...")
+
+        # Initialize cloud plugins
+        self.cloud_plugins = await self._initialize_cloud_plugins()
+
+        # Setup active plugins based on configuration
+        await self._setup_active_plugins()
+
+        # Update Prometheus metrics
+        update_metrics(orchestrator_status="initialized")
+
+        logger.info(f"✅ Orchestrator initialized with {len(self.active_plugins)} active plugins")
+
+    async def _setup_active_plugins(self):
+        """Setup active plugins based on configuration and availability"""
+        plugin_manager = self.plugin_manager
+
+        # Get prioritized plugins for each enabled cloud provider
+        if self.settings.gcp.enabled:
+            gcp_plugins = self.settings.ai.plugins.get_prioritized_plugins("gcp")
+            for plugin_name in gcp_plugins:
+                if plugin_name in self.cloud_plugins:
+                    self.active_plugins[f"gcp_{plugin_name}"] = self.cloud_plugins[plugin_name]
+                    logger.info(f"✅ Activated GCP plugin: {plugin_name}")
+
+        if self.settings.azure.enabled:
+            azure_plugins = self.settings.ai.plugins.get_prioritized_plugins("azure")
+            for plugin_name in azure_plugins:
+                if plugin_name in self.cloud_plugins:
+                    self.active_plugins[f"azure_{plugin_name}"] = self.cloud_plugins[plugin_name]
+                    logger.info(f"✅ Activated Azure plugin: {plugin_name}")
+
+        # Always include multi-cloud plugins
+        multi_cloud_plugins = self.settings.ai.plugins.get_prioritized_plugins("multi_cloud")
+        for plugin_name in multi_cloud_plugins:
+            if plugin_name in self.cloud_plugins:
+                self.active_plugins[f"multi_{plugin_name}"] = self.cloud_plugins[plugin_name]
+                logger.info(f"✅ Activated Multi-cloud plugin: {plugin_name}")
+
+        logger.info(f"🎯 Total active plugins: {len(self.active_plugins)}")
+
+        logger.info("🚀 SentinelNet Orchestrator initialized with advanced AI agents")
 
         # Agent registry
         self.registered_agents: Dict[str, AgentInfo] = {}
@@ -165,6 +210,162 @@ class SentinelNetOrchestrator:
         }
 
         logger.info("🚀 SentinelNet Orchestrator initialized")
+
+    def _initialize_llm(self):
+        """Initialize LLM based on available API keys - supports multiple providers"""
+        llm = None
+
+        # Priority: OpenAI > Google AI > Azure OpenAI (future)
+        if self.settings.ai.openai_api_key:
+            try:
+                llm = ChatOpenAI(
+                    model=self.settings.ai.openai_model,
+                    temperature=self.settings.ai.openai_temperature,
+                    api_key=self.settings.ai.openai_api_key
+                )
+                logger.info("✅ OpenAI LLM initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to initialize OpenAI LLM: {e}")
+
+        # Fallback to Google AI (free tier available)
+        if llm is None and self.settings.ai.google_api_key:
+            try:
+                from langchain_google_genai import ChatGoogleGenerativeAI
+                llm = ChatGoogleGenerativeAI(
+                    model=self.settings.ai.google_model,
+                    google_api_key=self.settings.ai.google_api_key,
+                    temperature=self.settings.ai.openai_temperature
+                )
+                logger.info("✅ Google AI LLM initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to initialize Google AI LLM: {e}")
+
+        if llm is None:
+            logger.warning("⚠️ No LLM available - some features may be limited")
+
+        return llm
+
+    def _initialize_autogen(self):
+        """Initialize Microsoft AutoGen agents for Azure operations"""
+        autogen_agents = {}
+
+        if not self.settings.azure.enabled:
+            return autogen_agents
+
+        try:
+            from autogen import AssistantAgent, UserProxyAgent
+            from autogen.agentchat import GroupChat, GroupChatManager
+
+            # Azure Operations Agent
+            azure_agent = AssistantAgent(
+                name="AzureAgent",
+                system_message="You are an expert Azure cloud engineer. Help monitor, diagnose, and remediate Azure services.",
+                llm_config={
+                    "model": self.settings.ai.openai_model if self.llm else "gpt-3.5-turbo",
+                    "api_key": self.settings.ai.openai_api_key,
+                    "temperature": 0.1,
+                },
+                max_consecutive_auto_reply=10,
+                human_input_mode="NEVER",
+            )
+
+            # User proxy for Azure operations
+            azure_proxy = UserProxyAgent(
+                name="AzureOperator",
+                system_message="Execute Azure operations and report results.",
+                code_execution_config=False,
+                human_input_mode="NEVER",
+            )
+
+            autogen_agents["azure"] = {
+                "agent": azure_agent,
+                "proxy": azure_proxy
+            }
+
+            logger.info("✅ AutoGen Azure agents initialized")
+
+        except ImportError:
+            logger.warning("⚠️ AutoGen not available - Azure agent features limited")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize AutoGen agents: {e}")
+
+        return autogen_agents
+
+    def _initialize_google_agents(self):
+        """Initialize Google Agent Development Kit"""
+        google_agents = {}
+
+        if not self.settings.gcp.enabled:
+            return google_agents
+
+        try:
+            import google.generativeai as genai
+
+            if self.settings.ai.google_api_key:
+                genai.configure(api_key=self.settings.ai.google_api_key)
+
+                # GCP Operations Agent using Gemini
+                model = genai.GenerativeModel(self.settings.ai.google_model)
+
+                google_agents["gcp"] = {
+                    "model": model,
+                    "agent_type": "gemini_agent"
+                }
+
+                logger.info("✅ Google Agent Development Kit initialized")
+
+        except ImportError:
+            logger.warning("⚠️ Google Generative AI not available - GCP agent features limited")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Google agents: {e}")
+
+        return google_agents
+
+    async def _initialize_cloud_plugins(self):
+        """Initialize cloud monitoring plugins based on configuration"""
+        plugin_manager = get_plugin_manager()
+        initialized_plugins = {}
+
+        try:
+            # Setup plugins based on enabled cloud providers and available licenses
+            setup_tasks = []
+
+            if self.settings.gcp.enabled:
+                setup_tasks.append(setup_gcp_plugins())
+
+            if self.settings.azure.enabled:
+                setup_tasks.append(setup_azure_plugins())
+
+            if self.settings.aws.enabled:
+                logger.info("⚠️ AWS plugins not yet fully implemented")
+
+            # Always setup multi-cloud plugins for orchestration
+            setup_tasks.append(setup_multi_cloud_plugins())
+
+            # Execute plugin setup concurrently
+            if setup_tasks:
+                results = await asyncio.gather(*setup_tasks, return_exceptions=True)
+                successful_setups = sum(1 for r in results if r is True)
+                logger.info(f"✅ Plugin setup completed: {successful_setups}/{len(setup_tasks)} successful")
+
+            # Get list of active plugins
+            plugin_list = plugin_manager.list_plugins()
+
+            for plugin_name, plugin_info in plugin_list.items():
+                if plugin_info.get("active", False):
+                    initialized_plugins[plugin_name] = {
+                        "plugin": plugin_manager._active_plugins.get(plugin_name),
+                        "capabilities": plugin_info.get("capabilities", {}),
+                        "status": "active"
+                    }
+                    logger.info(f"✅ Plugin '{plugin_name}' initialized and active")
+
+            logger.info(f"✅ Initialized {len(initialized_plugins)} active plugins")
+
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize cloud plugins: {e}")
+
+        return initialized_plugins
 
     def _build_orchestration_workflow(self) -> StateGraph:
         """

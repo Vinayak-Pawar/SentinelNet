@@ -1,0 +1,223 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinelnet"
+version = "0.1.0"
+description = "AI-Powered Multi-Cloud Resilience Platform with Advanced Agent Orchestration"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Vinayak Pawar", email = "vinayak@example.com"},
+]
+maintainers = [
+    {name = "Vinayak Pawar", email = "vinayak@example.com"},
+]
+keywords = ["ai", "cloud", "monitoring", "resilience", "agents", "autogen", "langchain"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    # Core AI/ML Libraries
+    "langchain>=0.1.0",
+    "langchain-community>=0.0.10",
+    "langgraph>=0.0.20",
+    "langchain-openai>=0.0.8",
+    "langchain-google-genai>=1.0.0",
+
+    # Microsoft AutoGen
+    "pyautogen>=0.2.0",
+
+    # Google Agent Development Kit
+    "google-cloud-aiplatform>=1.36.0",
+    "google-generativeai>=0.3.0",
+
+    # Web Framework
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "streamlit>=1.28.0",
+
+    # Cloud SDKs
+    "google-cloud-bigquery>=3.13.0",
+    "azure-storage-blob>=12.17.0",
+    "azure-devops>=7.1.0b3",
+    "azure-identity>=1.13.0",
+    "azure-monitor-query>=1.0.0",
+
+    # Monitoring & Observability
+    "prometheus-client>=0.19.0",
+    "grafana-api>=1.0.3",
+    "opentelemetry-distro>=0.43b0",
+    "opentelemetry-instrumentation-fastapi>=0.43b0",
+
+    # Data Processing
+    "pandas>=2.1.0",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.3.0",
+    "influxdb-client>=1.36.0",
+
+    # Communication & Networking
+    "websockets>=12.0",
+    "requests>=2.31.0",
+    "httpx>=0.25.0",
+    "aiohttp>=3.9.0",
+
+    # Environment & Configuration
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+
+    # Utilities
+    "click>=8.1.0",
+    "rich>=13.7.0",
+    "tqdm>=4.66.0",
+    "schedule>=1.2.0",
+    "structlog>=23.2.0",
+
+    # Development & Testing
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.11.0",
+    "isort>=5.12.0",
+    "flake8>=6.1.0",
+    "mypy>=1.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=3.5.0",
+    "ruff>=0.1.0",
+    "jupyter>=1.0.0",
+    "ipykernel>=6.25.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.4.0",
+    "mkdocstrings>=0.23.0",
+]
+monitoring = [
+    "grafana-client>=3.0.0",
+    "prometheus-api-client>=0.5.0",
+]
+
+[project.scripts]
+sentinelnet = "sentinelnet.cli:main"
+sentinelnet-api = "sentinelnet.api.main:run_api"
+sentinelnet-dashboard = "sentinelnet.dashboard.app:run_dashboard"
+
+[project.urls]
+Homepage = "https://github.com/Vinayak-Pawar/SentinelNet"
+Documentation = "https://sentinelnet.readthedocs.io/"
+Repository = "https://github.com/Vinayak-Pawar/SentinelNet"
+Issues = "https://github.com/Vinayak-Pawar/SentinelNet/issues"
+Changelog = "https://github.com/Vinayak-Pawar/SentinelNet/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sentinelnet*"]
+exclude = ["tests*", "docs*", "scripts*"]
+
+[tool.setuptools.package-data]
+sentinelnet = [
+    "config/*.yaml",
+    "config/*.json",
+    "templates/*",
+    "static/*",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["sentinelnet"]
+known_third_party = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "langchain",
+    "autogen",
+    "google",
+    "azure",
+]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "google.*",
+    "azure.*",
+    "prometheus_client.*",
+    "grafana_api.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--disable-warnings",
+    "--cov=sentinelnet",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "e2e: End-to-end tests",
+    "slow: Slow running tests",
+    "azure: Azure-related tests",
+    "gcp: GCP-related tests",
+]

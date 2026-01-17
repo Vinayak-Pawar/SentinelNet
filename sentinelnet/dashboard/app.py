@@ -25,28 +25,107 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Mock data for demo purposes
-def generate_mock_service_data():
-    """Generate mock service health data for demonstration"""
-    services = [
-        {"name": "BigQuery", "cloud": "GCP", "status": "healthy", "latency": 45},
-        {"name": "Vertex AI", "cloud": "GCP", "status": "healthy", "latency": 67},
-        {"name": "Blob Storage", "cloud": "Azure", "status": "warning", "latency": 234},
-        {"name": "DevOps", "cloud": "Azure", "status": "healthy", "latency": 89}
-    ]
+# Import from new package structure
+try:
+    from sentinelnet.core.orchestrator import get_orchestrator
+    from sentinelnet.core.config import get_settings
+    from sentinelnet.monitoring.prometheus import get_metrics
+    from sentinelnet.agents.gcp_monitor import get_gcp_monitor
+    from sentinelnet.agents.azure_monitor import get_azure_monitor
+except ImportError:
+    # Fallback for development
+    get_orchestrator = lambda: None
+    get_settings = lambda: type('obj', (object,), {'version': '0.1.0'})()
+    get_metrics = lambda: {}
+    get_gcp_monitor = lambda: None
+    get_azure_monitor = lambda: None
 
-    # Randomly simulate some issues for demo
-    if random.random() < 0.3:  # 30% chance of issues
-        affected = random.choice(services)
-        affected["status"] = "error" if random.random() < 0.5 else "warning"
-        affected["latency"] = random.randint(500, 2000)
+# Enhanced mock data for demo purposes
+def generate_service_data():
+    """Generate service health data from real monitors or mock data"""
+    services = []
+
+    # Try to get real data from monitors
+    try:
+        gcp_monitor = get_gcp_monitor()
+        if gcp_monitor:
+            for service_name in ["BigQuery", "Vertex AI"]:
+                status = gcp_monitor.get_service_status(getattr(gcp_monitor, f'GCPService.{service_name.upper().replace(" ", "_")}', None))
+                if status:
+                    services.append({
+                        "name": service_name,
+                        "cloud": "GCP",
+                        "status": status.status.value,
+                        "latency": int(status.latency_ms),
+                        "last_checked": status.timestamp.isoformat() if status.timestamp else datetime.now().isoformat()
+                    })
+    except Exception:
+        pass
+
+    try:
+        azure_monitor = get_azure_monitor()
+        if azure_monitor:
+            for service_name in ["Blob Storage", "DevOps"]:
+                status = azure_monitor.get_service_status(getattr(azure_monitor, f'AzureService.{service_name.upper().replace(" ", "_")}', None))
+                if status:
+                    services.append({
+                        "name": service_name,
+                        "cloud": "Azure",
+                        "status": status.status.value,
+                        "latency": int(status.latency_ms),
+                        "last_checked": status.timestamp.isoformat() if status.timestamp else datetime.now().isoformat()
+                    })
+    except Exception:
+        pass
+
+    # Fallback to mock data if no real data
+    if not services:
+        services = [
+            {"name": "BigQuery", "cloud": "GCP", "status": "healthy", "latency": 45, "last_checked": datetime.now().isoformat()},
+            {"name": "Vertex AI", "cloud": "GCP", "status": "healthy", "latency": 67, "last_checked": datetime.now().isoformat()},
+            {"name": "Blob Storage", "cloud": "Azure", "status": "warning", "latency": 234, "last_checked": datetime.now().isoformat()},
+            {"name": "DevOps", "cloud": "Azure", "status": "healthy", "latency": 89, "last_checked": datetime.now().isoformat()}
+        ]
+
+        # Randomly simulate some issues for demo
+        if random.random() < 0.3:  # 30% chance of issues
+            affected = random.choice(services)
+            affected["status"] = "error" if random.random() < 0.5 else "warning"
+            affected["latency"] = random.randint(500, 2000)
 
     return services
 
+def get_system_metrics():
+    """Get system metrics from orchestrator or mock data"""
+    try:
+        orchestrator = get_orchestrator()
+        if orchestrator:
+            return asyncio.run(orchestrator.get_system_status())
+    except Exception:
+        pass
+
+    # Mock system metrics
+    return {
+        "system_health_score": 95.0,
+        "active_agents": 4,
+        "total_agents": 4,
+        "services_monitored": 4,
+        "active_alerts": 1,
+        "pending_remediations": 0,
+        "communication_status": "healthy",
+        "autogen_agents": 1,
+        "google_agents": 1,
+        "last_updated": datetime.now()
+    }
+
 def run_dashboard():
-    """Main dashboard application"""
-    st.title("🛡️ SentinelNet - Cloud Resilience Dashboard")
+    """Main dashboard application with enhanced AI agent features"""
+    st.title("🛡️ SentinelNet v0.1.0 - Cloud Resilience Dashboard")
     st.markdown("*AI-Powered Multi-Cloud Outage Detection & Remediation*")
+    st.markdown("*✨ Enhanced with Microsoft AutoGen, Google Agent Kit & Advanced Monitoring*")
+
+    # Get system metrics
+    system_metrics = get_system_metrics()
 
     # Sidebar
     with st.sidebar:
@@ -64,6 +143,12 @@ def run_dashboard():
         if st.button("📋 Generate Remediation Plan"):
             st.session_state.show_remediation = True
 
+        if st.button("🤖 AutoGen Azure Analysis"):
+            st.session_state.show_autogen = True
+
+        if st.button("🌐 Google Agent Analysis"):
+            st.session_state.show_google_agent = True
+
         st.divider()
 
         st.subheader("⚙️ Settings")
@@ -72,17 +157,30 @@ def run_dashboard():
 
         st.divider()
 
-        st.markdown("### 📊 System Status")
-        st.metric("Active Agents", "4/4", "🟢")
-        st.metric("Services Monitored", "4", "🟢")
-        st.metric("Uptime", "99.9%", "🟢")
+        st.subheader("📊 System Status")
+        health_score = system_metrics.get("system_health_score", 95.0)
+        active_agents = system_metrics.get("active_agents", 4)
+        total_agents = system_metrics.get("total_agents", 4)
+
+        st.metric("System Health", f"{health_score:.1f}%", "🟢" if health_score > 90 else "🟡")
+        st.metric("Active Agents", f"{active_agents}/{total_agents}", "🟢" if active_agents == total_agents else "🟡")
+        st.metric("Services Monitored", system_metrics.get("services_monitored", 4), "🟢")
+
+        st.divider()
+
+        st.subheader("🤖 AI Agents")
+        autogen_count = system_metrics.get("autogen_agents", 0)
+        google_count = system_metrics.get("google_agents", 0)
+
+        st.metric("AutoGen Agents", autogen_count, "🤖" if autogen_count > 0 else "⚪")
+        st.metric("Google Agents", google_count, "🌐" if google_count > 0 else "⚪")
 
     # Main content
     col1, col2, col3 = st.columns(3)
 
     with col1:
         st.subheader("🌐 Service Health Overview")
-        services = generate_mock_service_data()
+        services = generate_service_data()
 
         # Service status cards
         for service in services:
