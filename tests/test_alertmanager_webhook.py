@@ -206,6 +206,6 @@ if __name__ == "__main__":
     print("  conda activate genai && sentinelnet api")
     print()
     
-    input("Press Enter to start tests...")
+    # input("Press Enter to start tests...")
     
     test_webhook(api_url)
