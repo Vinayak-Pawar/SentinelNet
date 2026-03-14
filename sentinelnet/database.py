@@ -94,6 +94,7 @@ class AlertDatabase:
                     title TEXT NOT NULL,
                     status TEXT NOT NULL,
                     severity TEXT NOT NULL,
+                    alert_ids TEXT,
                     alert_count INTEGER DEFAULT 0,
                     affected_services TEXT,
                     affected_clouds TEXT,
@@ -308,16 +309,17 @@ class AlertDatabase:
                 
                 cursor.execute("""
                     INSERT OR REPLACE INTO incidents (
-                        id, title, status, severity, alert_count,
+                        id, title, status, severity, alert_ids, alert_count,
                         affected_services, affected_clouds, affected_regions,
                         created_at, updated_at, resolved_at,
                         impact_analysis, remediation_plan_id
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     incident['id'],
                     incident['title'],
                     incident['status'],
                     incident['severity'],
+                    json.dumps(incident.get('alert_ids', [])),
                     incident.get('alert_count', 0),
                     json.dumps(incident.get('affected_services', [])),
                     json.dumps(incident.get('affected_clouds', [])),
@@ -335,6 +337,66 @@ class AlertDatabase:
         except Exception as e:
             logger.error(f"❌ Failed to store incident: {e}")
             return False
+
+    def get_incident(self, incident_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve an incident by ID.
+
+        Args:
+            incident_id: Incident identifier
+
+        Returns:
+            Incident dictionary or None
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM incidents WHERE id = ?", (incident_id,))
+                row = cursor.fetchone()
+
+                if row:
+                    incident = dict(row)
+                    # Parse JSON fields
+                    incident['alert_ids'] = json.loads(incident['alert_ids']) if incident['alert_ids'] else []
+                    incident['affected_services'] = json.loads(incident['affected_services']) if incident['affected_services'] else []
+                    incident['affected_clouds'] = json.loads(incident['affected_clouds']) if incident['affected_clouds'] else []
+                    incident['affected_regions'] = json.loads(incident['affected_regions']) if incident['affected_regions'] else []
+                    return incident
+
+                return None
+
+        except Exception as e:
+            logger.error(f"❌ Failed to get incident: {e}")
+            return None
+
+    def find_active_incidents(self, service: str, cloud_provider: str) -> List[Dict[str, Any]]:
+        """
+        Find active incidents for a service and cloud provider.
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                # Simple check for active incidents
+                # In real scenario, would use JSON functions of SQLite
+                cursor.execute(
+                    "SELECT * FROM incidents WHERE status = 'active' AND affected_services LIKE ? AND affected_clouds LIKE ?",
+                    (f'%"{service}"%', f'%"{cloud_provider}"%')
+                )
+                rows = cursor.fetchall()
+
+                incidents = []
+                for row in rows:
+                    inc = dict(row)
+                    inc['alert_ids'] = json.loads(inc['alert_ids']) if inc['alert_ids'] else []
+                    inc['affected_services'] = json.loads(inc['affected_services']) if inc['affected_services'] else []
+                    inc['affected_clouds'] = json.loads(inc['affected_clouds']) if inc['affected_clouds'] else []
+                    inc['affected_regions'] = json.loads(inc['affected_regions']) if inc['affected_regions'] else []
+                    incidents.append(inc)
+
+                return incidents
+        except Exception as e:
+            logger.error(f"❌ Failed to find active incidents: {e}")
+            return []
     
     def get_stats(self) -> Dict[str, Any]:
         """

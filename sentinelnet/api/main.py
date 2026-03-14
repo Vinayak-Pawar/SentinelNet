@@ -16,6 +16,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import uvicorn
+import asyncio
 import logging
 import os
 from datetime import datetime
@@ -29,7 +30,7 @@ from sentinelnet.monitoring.prometheus import (
 )
 from sentinelnet.models import (
     AlertManagerPayload, AlertResponse, Alert as AlertModel, 
-    AlertStatus, Severity
+    AlertStatus, Severity, Incident
 )
 from sentinelnet.database import get_database
 
@@ -51,9 +52,10 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("🚀 Starting SentinelNet API")
     orchestrator_instance = SentinelNetOrchestrator()
+    await orchestrator_instance.initialize_plugins()
 
     # Start background tasks
-    await orchestrator_instance.start_orchestration_loop()
+    asyncio.create_task(orchestrator_instance.start_orchestration_loop())
 
     yield
 
@@ -226,7 +228,7 @@ async def receive_alertmanager_webhook(
         db = get_database()
         
         # Process each alert in the payload
-        processed_alerts = []
+        processed_alerts_data = []
         alert_ids = []
         
         for am_alert in payload.alerts:
@@ -237,7 +239,7 @@ async def receive_alertmanager_webhook(
                 # Store in database
                 alert_dict = alert.dict()
                 if db.store_alert(alert_dict):
-                    processed_alerts.append(alert)
+                    processed_alerts_data.append(alert_dict)
                     alert_ids.append(alert.id)
                     logger.info(f"✅ Processed alert: {alert.id} - {alert.alertname}")
                 else:
@@ -248,19 +250,19 @@ async def receive_alertmanager_webhook(
                 continue
         
         # Queue alerts for AI processing in background
-        if processed_alerts:
+        if processed_alerts_data:
             background_tasks.add_task(
                 _process_alerts_async,
-                processed_alerts
+                processed_alerts_data
             )
         
         # Update Prometheus metrics
-        INCIDENT_COUNT.inc(len(processed_alerts))
+        INCIDENT_COUNT.inc(len(processed_alerts_data))
         
         return AlertResponse(
             success=True,
-            message=f"Successfully received and queued {len(processed_alerts)} alerts",
-            alerts_received=len(processed_alerts),
+            message=f"Successfully received and queued {len(processed_alerts_data)} alerts",
+            alerts_received=len(processed_alerts_data),
             alert_ids=alert_ids,
             timestamp=datetime.now()
         )
@@ -324,30 +326,224 @@ def _convert_alertmanager_alert(
     return alert
 
 
-async def _process_alerts_async(alerts: List[AlertModel]):
+async def _process_alerts_async(alerts_data: List[Dict[str, Any]]):
     """
     Process alerts asynchronously (background task).
     
-    This will be expanded in Phase 2 to include:
-    - Alert enrichment with cloud context
-    - Alert correlation
-    - Incident creation
-    - AI analysis trigger
-    
     Args:
-        alerts: List of alerts to process
+        alerts_data: List of alert dictionaries to process
     """
     try:
-        logger.info(f"🔄 Processing {len(alerts)} alerts in background...")
+        logger.info(f"🔄 Processing {len(alerts_data)} alerts in background...")
+
+        # Local imports for robustness
+        from sentinelnet.database import get_database
+        from sentinelnet.models import Alert as AlertModel
+
+        db = get_database()
         
-        # TODO: Phase 2 - Add alert enrichment
-        # TODO: Phase 2 - Add alert correlation
-        # TODO: Phase 2 - Trigger AI analysis
+        for alert_dict in alerts_data:
+            alert = AlertModel(**alert_dict)
+            logger.info(f"🔍 Starting enrichment for alert: {alert.id}")
+
+            # Task 1.5: Alert Enrichment
+            enriched_alert = await _enrich_alert(alert)
+
+            # Update database with enriched alert
+            db.store_alert(enriched_alert.dict())
+
+            # Task 1.6: Alert Correlation
+            incident = await _correlate_alert(enriched_alert)
+            if incident:
+                # Update alert with incident ID
+                enriched_alert.incident_id = incident.id
+                logger.info(f"🔗 Associating alert {enriched_alert.id} with incident {incident.id}")
+                db.store_alert(enriched_alert.dict())
         
-        logger.info(f"✅ Background processing complete for {len(alerts)} alerts")
+        logger.info(f"✅ Background processing complete for {len(alerts_data)} alerts")
         
     except Exception as e:
         logger.error(f"❌ Background processing error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+
+
+async def _enrich_alert(alert: AlertModel) -> AlertModel:
+    """
+    Enrich an alert with additional context.
+
+    Args:
+        alert: The alert to enrich
+
+    Returns:
+        Enriched alert
+    """
+    logger.info(f"🧪 Enriching alert: {alert.id}")
+
+    cloud_context = {}
+
+    # Basic enrichment based on cloud provider
+    if alert.cloud_provider:
+        if alert.cloud_provider.lower() == "gcp":
+            from sentinelnet.agents.gcp_monitor import get_gcp_monitor
+            monitor = get_gcp_monitor()
+            if alert.service:
+                cloud_context = monitor.get_service_health(alert.service)
+        elif alert.cloud_provider.lower() == "azure":
+            from sentinelnet.agents.azure_monitor import get_azure_monitor, AzureService
+            monitor = get_azure_monitor()
+            # Map common service names to AzureService enum if possible
+            azure_service = None
+            if alert.service:
+                if "blob" in alert.service.lower() or "storage" in alert.service.lower():
+                    azure_service = AzureService.BLOB_STORAGE
+                elif "devops" in alert.service.lower():
+                    azure_service = AzureService.DEVOPS
+
+            if azure_service:
+                status = monitor.get_service_status(azure_service)
+                if status:
+                    cloud_context = {
+                        "status": status.status.value,
+                        "latency_ms": status.latency_ms,
+                        "metrics": status.metrics,
+                        "error": status.error_message
+                    }
+                else:
+                    # Force a check if no status is available
+                    status = await monitor.force_health_check(azure_service)
+                    cloud_context = {
+                        "status": status.status.value,
+                        "latency_ms": status.latency_ms,
+                        "metrics": status.metrics,
+                        "error": status.error_message
+                    }
+
+    alert.cloud_context = cloud_context
+    alert.enriched = True
+
+    # Task 1.7: Query Prometheus for additional context
+    try:
+        from prometheus_api_client import PrometheusConnect
+
+        prom_url = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
+        prom = PrometheusConnect(url=prom_url, disable_ssl=True)
+
+        if prom.check_prometheus_connection():
+            # Query recent metrics for the service if available
+            service_label = alert.service or ""
+            recent_metrics = prom.get_current_metric_value(metric_name=None, label_config={"service": service_label} if service_label else None)
+
+            prometheus_context = {
+                "connected": True,
+                "recent_metrics": recent_metrics[:5] if isinstance(recent_metrics, list) else recent_metrics,
+                "queried_at": datetime.now().isoformat()
+            }
+        else:
+            prometheus_context = {"connected": False, "error": "Could not connect to Prometheus"}
+
+        if not alert.cloud_context:
+            alert.cloud_context = {}
+        alert.cloud_context["prometheus"] = prometheus_context
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to query Prometheus: {e}")
+        # Fallback to status only if it fails
+        if not alert.cloud_context:
+            alert.cloud_context = {}
+        alert.cloud_context["prometheus"] = {"connected": False, "error": str(e)}
+
+    return alert
+
+
+async def _correlate_alert(alert: AlertModel) -> Optional[Incident]:
+    """
+    Correlate an alert with existing incidents or create a new one.
+
+    Args:
+        alert: The alert to correlate
+
+    Returns:
+        Associated incident
+    """
+    logger.info(f"🔗 Correlating alert: {alert.id}")
+
+    from sentinelnet.database import get_database
+    from sentinelnet.models import Incident, Severity
+
+    db = get_database()
+
+    # Refined correlation logic: Group by service and cloud_provider within a time window
+    service = alert.service or "unknown"
+    cloud_provider = alert.cloud_provider or "unknown"
+
+    # Try to find an active incident for this service/provider
+    active_incidents = db.find_active_incidents(service, cloud_provider)
+
+    # Filter by time window (e.g., 2 hours)
+    time_window = 2 * 3600  # 2 hours in seconds
+    current_time = datetime.now()
+
+    matching_incident = None
+    for inc_dict in active_incidents:
+        created_at = inc_dict['created_at']
+        if isinstance(created_at, str):
+            created_at = datetime.fromisoformat(created_at)
+
+        if (current_time - created_at).total_seconds() < time_window:
+            matching_incident = inc_dict
+            break
+
+    if matching_incident:
+        incident_id = matching_incident['id']
+        logger.info(f"📍 Found matching active incident: {incident_id}")
+        incident = Incident(**matching_incident)
+
+        # Update incident
+        if alert.id not in incident.alert_ids:
+            incident.alert_ids.append(alert.id)
+            incident.alert_count = len(incident.alert_ids)
+
+        # Update severity if current alert is higher
+        severity_map = {
+            Severity.INFO: 0,
+            Severity.LOW: 1,
+            Severity.MEDIUM: 2,
+            Severity.HIGH: 3,
+            Severity.CRITICAL: 4
+        }
+
+        current_sev = severity_map.get(alert.severity, 0)
+        incident_sev = severity_map.get(incident.severity, 0)
+
+        if current_sev > incident_sev:
+            incident.severity = alert.severity
+
+        # Update affected regions if new
+        if alert.region and alert.region not in incident.affected_regions:
+            incident.affected_regions.append(alert.region)
+
+        incident.updated_at = datetime.now()
+        db.store_incident(incident.dict())
+    else:
+        incident_id = f"incident_{service}_{cloud_provider}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        logger.info(f"🆕 Creating new incident: {incident_id}")
+        # Create new incident
+        incident = Incident(
+            id=incident_id,
+            title=f"Incident for {service}",
+            status="active",
+            severity=alert.severity,
+            alert_ids=[alert.id],
+            alert_count=1,
+            affected_services=[alert.service] if alert.service else [],
+            affected_clouds=[alert.cloud_provider] if alert.cloud_provider else [],
+            affected_regions=[alert.region] if alert.region else [],
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db.store_incident(incident.dict())
+
+    return incident
 
 
 @app.get("/api/alerts")
@@ -768,10 +964,10 @@ def run_api():
     logger.info(f"Starting SentinelNet API on port {port}")
 
     uvicorn.run(
-        "api.main:app",
+        "sentinelnet.api.main:app",
         host="0.0.0.0",
         port=port,
-        reload=True,
+        reload=False,
         log_level="info"
     )
 

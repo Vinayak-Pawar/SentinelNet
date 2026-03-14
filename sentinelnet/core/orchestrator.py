@@ -142,6 +142,25 @@ class SentinelNetOrchestrator:
         self.google_agents = {}
         self.cloud_monitors = {}
 
+        # Agent registry
+        self.registered_agents: Dict[str, AgentInfo] = {}
+        self.agent_heartbeat_timeout = 300  # 5 minutes
+
+        # Orchestrator state
+        self.state = OrchestratorState()
+
+        # LangGraph workflow
+        self.workflow = self._build_orchestration_workflow()
+
+        # Performance metrics
+        self.metrics = {
+            "workflows_executed": 0,
+            "agents_coordinated": 0,
+            "incidents_detected": 0,
+            "remediations_planned": 0,
+            "average_response_time": 0.0
+        }
+
         # Update Prometheus metrics
         update_metrics(orchestrator_status="created")
 
@@ -187,28 +206,6 @@ class SentinelNetOrchestrator:
                 logger.info(f"✅ Activated Multi-cloud plugin: {plugin_name}")
 
         logger.info(f"🎯 Total active plugins: {len(self.active_plugins)}")
-
-        logger.info("🚀 SentinelNet Orchestrator initialized with advanced AI agents")
-
-        # Agent registry
-        self.registered_agents: Dict[str, AgentInfo] = {}
-        self.agent_heartbeat_timeout = 300  # 5 minutes
-
-        # LangGraph workflow
-        self.workflow = self._build_orchestration_workflow()
-
-        # Orchestrator state
-        self.state = OrchestratorState()
-
-        # Performance metrics
-        self.metrics = {
-            "workflows_executed": 0,
-            "agents_coordinated": 0,
-            "incidents_detected": 0,
-            "remediations_planned": 0,
-            "average_response_time": 0.0
-        }
-
         logger.info("🚀 SentinelNet Orchestrator initialized")
 
     def _initialize_llm(self):
